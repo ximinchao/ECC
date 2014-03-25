@@ -3,7 +3,7 @@
 
 int main()
 {
-	unsigned int uiBase = 23, uiExp = 22, uiMod = 97, uiRes = 0;
+	u32 uiBase = 15, uiExp = 103, uiMod = 143, uiRes = 0;
 
 	if (Util_ModExponent(uiBase, uiExp, uiMod, &uiRes))
 	{

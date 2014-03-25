@@ -40,7 +40,7 @@ bool Util_ModExponent(const u32 uiBase, const u32 uiExp, const u32 uiMod, u32* c
 	n = uiMod;
 	t = sizeof(H)*8;
 
-	while (!(H & 0x8000))
+	while (!(H & 0x80000000))
 	{
 		t--;
 		H = (H<<1);
@@ -48,11 +48,11 @@ bool Util_ModExponent(const u32 uiBase, const u32 uiExp, const u32 uiMod, u32* c
 	H = (H<<1);
 	
 	r = x;
-	for (i=0; i<t; i++)
+	for (i=0; i<t-1; i++)
 	{
 		r = (r*r) % n;
 		
-		if (H & 0x80)
+		if (H & 0x80000000)
 		{
 			r = (r*x) % n;
 		}
