@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "ECCType.h"
 #include "util.h"
 
 int main()

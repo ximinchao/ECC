@@ -1,3 +1,4 @@
+#include "ECCType.h"
 #include "util.h"
 
 bool Util_IsLittleEndian()

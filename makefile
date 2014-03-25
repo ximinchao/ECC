@@ -1,10 +1,10 @@
 ECCTest: ECCTest.o util.o
 	g++ -g ECCTest.o util.o -o ECCTest
 
-ECCTest.o: ECCTest.c util.h
+ECCTest.o: ECCTest.c util.h ECCType.h
 	g++ -g -c ECCTest.c
 
-util.o: util.c util.h
+util.o: util.c util.h ECCType.h
 	g++ -g -c util.c
 
 .PHONY: clean
