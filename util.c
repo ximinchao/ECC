@@ -1,9 +1,8 @@
-#include "ECCType.h"
 #include "util.h"
 
 bool Util_IsLittleEndian()
 {
-	unsigned int i = 0x0123;
+	u32 i = 0x0123;
 	
 	if ((i & 0xFF) != 0x23)
 	{
@@ -15,13 +14,13 @@ bool Util_IsLittleEndian()
 	}
 }
 
-bool Util_ModExponent(const unsigned int uiBase, const unsigned int uiExp, const unsigned int uiMod, unsigned int* const puiRes)
+bool Util_ModExponent(const u32 uiBase, const u32 uiExp, const u32 uiMod, u32* const puiRes)
 {
 	bool bRet =false;
 
-	unsigned int i = 0;
+	u32 i = 0;
 	
-	unsigned int x = 0, H = 0, n = 0, r = 0, t = 0;
+	u32 x = 0, H = 0, n = 0, r = 0, t = 0;
 
 	if (!puiRes)
 	{
