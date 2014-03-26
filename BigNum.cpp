@@ -171,34 +171,172 @@ BigNum BigNum::operator --(int)
 	return tmpBN;
 }
 
-BigNum& BigNum::operator + (BigNum& bn)
+BigNum operator + (BigNum& bn1, BigNum& bn2)
 {
-	return *this;
+	BigNum	tmpBN(bn1);
+	std::vector<u8>::reverse_iterator	rit1, rit2;
+	u32	uiRes = 0;
+	u8	ucCarry = 0;
+	
+	rit1 = tmpBN.m_vData.rbegin();
+	rit2 = bn2.m_vData.rbegin();
+
+	while ((rit1 != tmpBN.m_vData.rend()) && (rit2 != bn2.m_vData.rend()))
+	{
+		uiRes = *rit1 + *rit2 + ucCarry;
+		if (uiRes > 0xff)
+		{
+			ucCarry = (uiRes >> 8);
+			*rit1 = (uiRes & 0xff);
+		}
+		else
+		{
+			ucCarry = 0;
+			*rit1 = uiRes;
+		}
+	}
+
+	return tmpBN;
 }
 
-BigNum& BigNum::operator - (BigNum& bn)
+BigNum operator - (BigNum& bn1, BigNum& bn2)
 {
-	return *this;
+	BigNum	tmpBN(bn1);
+	std::vector<u8>::reverse_iterator	rit1, rit2;
+	u32	uiRes = 0;
+	u8	ucCarry = 0;
+	
+	rit1 = tmpBN.m_vData.rbegin();
+	rit2 = bn2.m_vData.rbegin();
+
+	while ((rit1 != tmpBN.m_vData.rend()) && (rit2 != bn2.m_vData.rend()))
+	{
+		uiRes = *rit1 + *rit2 + ucCarry;
+		if (uiRes > 0xff)
+		{
+			ucCarry = (uiRes >> 8);
+			*rit1 = (uiRes & 0xff);
+		}
+		else
+		{
+			ucCarry = 0;
+			*rit1 = uiRes;
+		}
+	}
+
+	return tmpBN;
 }
 
-BigNum& BigNum::operator * (BigNum& bn)
+BigNum operator * (BigNum& bn1, BigNum& bn2)
 {
-	return *this;
+	BigNum	tmpBN(bn1);
+	std::vector<u8>::reverse_iterator	rit1, rit2;
+	u32	uiRes = 0;
+	u8	ucCarry = 0;
+	
+	rit1 = tmpBN.m_vData.rbegin();
+	rit2 = bn2.m_vData.rbegin();
+
+	while ((rit1 != tmpBN.m_vData.rend()) && (rit2 != bn2.m_vData.rend()))
+	{
+		uiRes = *rit1 + *rit2 + ucCarry;
+		if (uiRes > 0xff)
+		{
+			ucCarry = (uiRes >> 8);
+			*rit1 = (uiRes & 0xff);
+		}
+		else
+		{
+			ucCarry = 0;
+			*rit1 = uiRes;
+		}
+	}
+
+	return tmpBN;
 }
 
-BigNum& BigNum::operator / (BigNum& bn)
+BigNum operator / (BigNum& bn1, BigNum& bn2)
 {
-	return *this;
+	BigNum	tmpBN(bn1);
+	std::vector<u8>::reverse_iterator	rit1, rit2;
+	u32	uiRes = 0;
+	u8	ucCarry = 0;
+	
+	rit1 = tmpBN.m_vData.rbegin();
+	rit2 = bn2.m_vData.rbegin();
+
+	while ((rit1 != tmpBN.m_vData.rend()) && (rit2 != bn2.m_vData.rend()))
+	{
+		uiRes = *rit1 + *rit2 + ucCarry;
+		if (uiRes > 0xff)
+		{
+			ucCarry = (uiRes >> 8);
+			*rit1 = (uiRes & 0xff);
+		}
+		else
+		{
+			ucCarry = 0;
+			*rit1 = uiRes;
+		}
+	}
+
+	return tmpBN;
 }
 
-BigNum& BigNum::operator % (BigNum& bn)
+BigNum operator % (BigNum& bn1, BigNum& bn2)
 {
-	return *this;
+	BigNum	tmpBN(bn1);
+	std::vector<u8>::reverse_iterator	rit1, rit2;
+	u32	uiRes = 0;
+	u8	ucCarry = 0;
+	
+	rit1 = tmpBN.m_vData.rbegin();
+	rit2 = bn2.m_vData.rbegin();
+
+	while ((rit1 != tmpBN.m_vData.rend()) && (rit2 != bn2.m_vData.rend()))
+	{
+		uiRes = *rit1 + *rit2 + ucCarry;
+		if (uiRes > 0xff)
+		{
+			ucCarry = (uiRes >> 8);
+			*rit1 = (uiRes & 0xff);
+		}
+		else
+		{
+			ucCarry = 0;
+			*rit1 = uiRes;
+		}
+	}
+
+	return tmpBN;
 }
 
-BigNum& BigNum::operator ^ (BigNum& bn)
+BigNum operator ^ (BigNum& bn1, BigNum& bn2)
 {
-	return *this;
+	BigNum	tmpBN(bn1);
+	std::vector<u8>::reverse_iterator	rit1, rit2;
+	u32	uiRes = 0;
+	u8	ucCarry = 0;
+	
+	rit1 = tmpBN.m_vData.rbegin();
+	rit2 = bn2.m_vData.rbegin();
+
+	while ((rit1 != tmpBN.m_vData.rend()) && (rit2 != bn2.m_vData.rend()))
+	{
+		uiRes = *rit1 + *rit2 + ucCarry;
+		if (uiRes > 0xff)
+		{
+			ucCarry = (uiRes >> 8);
+			*rit1 = (uiRes & 0xff);
+		}
+		else
+		{
+			ucCarry = 0;
+			*rit1 = uiRes;
+		}
+	}
+
+	return tmpBN;
 }
 
 BigNum& BigNum::operator = (BigNum& bn)

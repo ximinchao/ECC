@@ -28,17 +28,27 @@ public:
 #endif
 
 	u8 operator [](u32 idx) const;
+	
 	BigNum& operator ++();
 	BigNum operator ++(int);//too slow, not recommanded
+	
 	BigNum& operator --();
 	BigNum operator --(int);//too slow, not recommanded
-	BigNum& operator + (BigNum& bn);
-	BigNum& operator - (BigNum& bn);
-	BigNum& operator * (BigNum& bn);
-	BigNum& operator / (BigNum& bn);
-	BigNum& operator % (BigNum& bn);
-	BigNum& operator ^ (BigNum& bn);
+	
+	friend BigNum operator + (BigNum& bn1, BigNum& bn2);//too slow, not recommanded
+	friend BigNum operator - (BigNum& bn1, BigNum& bn2);//too slow, not recommanded
+	friend BigNum operator * (BigNum& bn1, BigNum& bn2);//too slow, not recommanded
+	friend BigNum operator / (BigNum& bn1, BigNum& bn2);//too slow, not recommanded
+	friend BigNum operator % (BigNum& bn1, BigNum& bn2);//too slow, not recommanded
+	friend BigNum operator ^ (BigNum& bn1, BigNum& bn2);//too slow, not recommanded
+	
 	BigNum& operator = (BigNum& bn);
+	friend BigNum& operator += (BigNum& bn1, BigNum& bn2);
+	friend BigNum& operator -= (BigNum& bn1, BigNum& bn2);
+	friend BigNum& operator *= (BigNum& bn1, BigNum& bn2);
+	friend BigNum& operator /= (BigNum& bn1, BigNum& bn2);
+	friend BigNum& operator %= (BigNum& bn1, BigNum& bn2);
+	friend BigNum& operator ^= (BigNum& bn1, BigNum& bn2);
 };
 
 #endif
