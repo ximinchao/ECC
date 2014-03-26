@@ -4,7 +4,27 @@
 
 bool BigNumTest()
 {
-	bool bRtn = false;
+	bool	bRtn = false;
+	u32	i = 0;	
+	u8	pbData[10] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0xf0};
+
+	BigNum	*bn =new BigNum(pbData, sizeof(pbData));
+	BigNum	*bn2 = new BigNum(*bn);
+	
+	bn->printContent();
+	bn2->printContent();
+
+	for (i=0; i<0x10; i++)
+	{
+		(*bn)++;
+		bn->printContent();
+	}
+	
+	for (i=0; i<0x10; i++)
+	{
+		(*bn)--;
+		bn->printContent();
+	}
 
 	bRtn = true;
 END:
@@ -32,6 +52,7 @@ END:
 int main()
 {
 	UtilTest();
+	BigNumTest();
 	
 	return 0;
 }
