@@ -1,8 +1,8 @@
 ECCTest: ECCTest.o util.o BigNum.o
 	g++ -g ECCTest.o util.o BigNum.o -o ECCTest
 
-ECCTest.o: ECCTest.c util.h ECCType.h
-	g++ -g -c ECCTest.c
+ECCTest.o: ECCTest.cpp util.h ECCType.h
+	g++ -g -c ECCTest.cpp
 
 util.o: util.c util.h ECCType.h
 	g++ -g -c util.c
