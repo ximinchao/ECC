@@ -10,6 +10,8 @@
 #include <iomanip>
 #endif
 
+#include <cstring>
+
 #define BIGNUM_DEF_INITSIZE	256
 
 class BigNum
@@ -19,12 +21,20 @@ private:
 	std::vector<u8> m_vData;
 
 	bool BN_IsZero() const;
+
 	bool BN_Inc_abs();//absolute increase
 	bool BN_Dec_abs();//absolute decrease
-	bool BN_Reorganize();//ajust the negative flag and head zeros
+	bool BN_Add_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes);//absolute add
+	bool BN_Minus_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes);//absolute minus, make sure bn1>bn2
+	bool BN_Multi_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes);//absolute multiply
+	bool BN_Divide_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes);//absolute divide
+	
+	bool BN_Reorganize();//ajust the head zeros
+	
 	i8 BN_Compare_abs(const BigNum& bn1, const BigNum& bn2) const;//absolute absolute value
 	i8 BN_Compare_abs(const BigNum& bn, const u32 uiData) const;//absolute absolute value
 	i8 BN_Compare_abs(const u32 uiData, const BigNum& bn) const;//absolute absolute value
+	
 	bool BN_IsLittleEndian() const;
 	bool BN_ReverseBuffer(u8 *const pbData, const u32 uiDataSize);
 
@@ -44,13 +54,22 @@ public:
 
 	BigNum& operator ++();
 	BigNum& operator --();	
-	BigNum& operator = (BigNum& bn);
-	BigNum& operator += (BigNum& bn);
-	BigNum& operator -= (BigNum& bn);
-	BigNum& operator *= (BigNum& bn);
-	BigNum& operator /= (BigNum& bn);
-	BigNum& operator %= (BigNum& bn);
-	BigNum& operator ^= (BigNum& bn);
+	BigNum& operator = (const BigNum& bn);
+	BigNum& operator += (const BigNum& bn);
+	BigNum& operator -= (const BigNum& bn);
+	BigNum& operator *= (const BigNum& bn);
+	BigNum& operator /= (const BigNum& bn);
+	BigNum& operator %= (const BigNum& bn);
+	BigNum& operator ^= (const BigNum& bn);
+	
+	BigNum& operator = (const i32 iData);
+	BigNum& operator += (const i32 iData);
+	BigNum& operator -= (const i32 iData);
+	BigNum& operator *= (const i32 iData);
+	BigNum& operator /= (const i32 iData);
+	BigNum& operator %= (const i32 iData);
+	BigNum& operator ^= (const i32 iData);
+
 	
 	bool operator > (const BigNum& bn) const;
 	bool operator >= (const BigNum& bn) const;
@@ -58,14 +77,6 @@ public:
 	bool operator <= (const BigNum& bn) const;
 	bool operator == (const BigNum& bn) const;
 	bool operator != (const BigNum& bn) const;
-
-	bool operator > (const u32 uiData) const;
-	bool operator >= (const u32 uiData) const;
-	bool operator < (const u32 uiData) const;
-	bool operator <= (const u32 uiData) const;
-	bool operator == (const u32 uiData) const;
-	bool operator != (const u32 uiData) const;
-
 
 	friend bool BN_Add(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes);
 	friend bool BN_Minus (const BigNum& bn1, const BigNum& bn2, BigNum& bnRes);
