@@ -1,170 +1,6 @@
 #include "BigNum.h"
 
-BigNum::BigNum()
-{
-	m_bPositive = true;
-	m_vData.reserve(BIGNUM_DEF_INITSIZE);
-	m_vData.push_back((u8)0);
-}
-
-BigNum::BigNum(const BigNum& bn)
-{
-	m_bPositive = bn.m_bPositive;
-
-	m_vData.reserve(BIGNUM_DEF_INITSIZE);
-	std::copy(bn.m_vData.begin(), bn.m_vData.end(), back_inserter(m_vData));
-	
-	BN_Reorganize();
-}
-
-BigNum::BigNum(const u8* const pbContent, const u32 uiContentSize, const bool bPositive)
-{
-	setData(pbContent, uiContentSize, bPositive);
-}
-
-BigNum::~BigNum()
-{
-	m_vData.erase(m_vData.begin(), m_vData.end());
-}
-
-bool BigNum::BN_IsZero() const
-{
-	bool bRtn = false;
-	
-	if ((m_vData.size() == 1) && (m_vData[0] == 0))
-	{
-		bRtn = true;
-	}
-
-	return bRtn;
-}
-
-bool BigNum::BN_Reorganize()
-{
-	bool bRtn = false;
-	std::vector<u8>::reverse_iterator rit;
-	u32 uiDataSize = 0;
-
-	uiDataSize = m_vData.size();
-	rit = m_vData.rbegin();
-	while ((uiDataSize > 1) && (*rit == 0))
-	{
-		m_vData.pop_back();
-		--rit;
-		--uiDataSize;
-	}
-	
-	bRtn = true;
-END:
-	return bRtn;
-}
-
-u32 BigNum::getSize() const
-{
-	u32	uiDataSize = 0;
-
-	uiDataSize = (u32)m_vData.size();
-
-	return uiDataSize;
-}
-
-#ifdef BIGNUM_SUPPORT_PRINT
-bool BigNum::printContent() const
-{
-	bool	bRtn = false;
-	u32	i = 0, uiDataSize = 0;
-	//std::ostream::fmtflags osFlagOld = 0;
-
-	//osFlagOld = std::cout.flag();//save old cout format flag, and set new format flag
-
-	uiDataSize = (u32)m_vData.size();
-	for (i=0; i<uiDataSize; i++)
-	{
-		std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << (u32)m_vData.at(uiDataSize-i-1) << " ";
-	}
-	std::cout << std::endl;
-
-	bRtn = true;
-END:
-	//std::cout.flag(osFlagOld);//restore cout format flag
-	return bRtn;
-}
-#endif
-
-bool BigNum::setData(const u8* const pbContent, const u32 uiContentSize, const bool bPositive)
-{
-	bool bRtn = false;
-	u32	i = 0;
-
-	if (!pbContent || !uiContentSize)
-	{
-		bRtn = false;
-		goto END;
-	}
-	
-	m_bPositive = bPositive;
-	m_vData.resize(0);
-	m_vData.reserve(BIGNUM_DEF_INITSIZE);
-	
-	for (i=0; i<uiContentSize; i++)
-	{
-		m_vData.push_back(pbContent[uiContentSize-i-1]);
-	}
-
-	bRtn = true;
-	BN_Reorganize();
-END:
-	return bRtn;
-}
-
-u8& BigNum::operator [](u32 idx)
-{
-	u32 uiSize = m_vData.size();
-
-	if (idx < uiSize)
-	{
-		return m_vData.at(uiSize-idx-1);
-	}
-
-	return m_vData.at(uiSize-1);
-}
-
-bool BigNum::BN_IsLittleEndian() const
-{
-	u32 uiTmp = 0x0001;
-	bool bRtn = false;
-
-	if (*((u8*)&uiTmp) != 0)
-	{
-		bRtn = true;
-	}
-
-	return bRtn;
-}
-
-bool BigNum::BN_ReverseBuffer(u8 *const pbData, const u32 uiDataSize)
-{
-	bool bRtn = false;
-	u32 i = 0;
-
-	if (!pbData || !uiDataSize)
-	{
-		bRtn = false;
-		goto END;
-	}
-
-	for (i=0; i<uiDataSize/2; i++)
-	{
-		pbData[i] = pbData[i] ^ pbData[uiDataSize-i-1];
-		pbData[uiDataSize-i-1] = pbData[i] ^ pbData[uiDataSize-i-1];
-		pbData[i] = pbData[i] ^ pbData[uiDataSize-i-1];
-	}
-
-	bRtn = true;
-END:
-	return bRtn;
-}
-
+/*************PRIVATE***************/
 bool BigNum::BN_Inc_abs()
 {
 	bool bRtn = false;
@@ -233,153 +69,254 @@ END:
 	return bRtn;
 }
 
-bool BigNum::BN_Add_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+
+i8 BigNum::BN_Compare_abs(const BigNum& bn1, const BigNum& bn2) const
+{
+	i8 cRes = 0;
+	u32 uiDataSize1 = 0, uiDataSize2 = 0;
+	std::vector<u8>::const_reverse_iterator rit1, rit2;
+
+	if (&bn1 == &bn2)
+	{
+		cRes = 0;
+		goto END;
+	}
+
+	uiDataSize1 = bn1.m_vData.size();
+	uiDataSize2 = bn2.m_vData.size();
+
+	if (uiDataSize1 > uiDataSize2)
+	{
+		cRes = 1;
+	}
+	else if (uiDataSize1 < uiDataSize2)
+	{
+		cRes = -1;
+	}
+	else
+	{
+		rit1 = bn1.m_vData.rbegin();
+		rit2 = bn2.m_vData.rbegin();
+
+		while (rit1 != bn1.m_vData.rend())
+		{
+			if (*rit1 != *rit2)
+			{
+				cRes = (*rit1 - *rit2);
+				break;
+			}
+			++rit1;
+			++rit2;
+		}
+	}
+
+END:
+	return cRes;
+}
+
+i8 BigNum::BN_Compare_abs(const BigNum& bn, const u32 uiData) const
+{
+	u8 pbData[4] = {0};
+	BigNum tmpBN;
+
+	std::memcpy(pbData, &uiData, 4);
+	if (BN_IsLittleEndian())
+	{
+		BN_ReverseBuffer(pbData, 4);
+	}
+	
+	tmpBN.setData(pbData, sizeof(pbData));
+	
+	return BN_Compare_abs(bn, tmpBN);
+}
+
+i8 BigNum::BN_Compare_abs(const u32 uiData, const BigNum& bn) const
+{
+	return (-1)*BN_Compare_abs(bn, uiData);
+}
+
+bool BigNum::BN_IsZero() const
 {
 	bool bRtn = false;
-	std::vector<u8>::iterator itr1, itr2, itrRes;
-	u32	uiRes = 0;
-	u8	ucCarry = 0;
 	
-	itr1 = bn1.m_vData.begin();
-	itr2 = bn2.m_vData.begin();
-	itrRes = bnRes.m_vData.begin();
-
-	while ((itr1 != bn1.m_vData.end()) || (itr2 != bn2.m_vData.end()) || (ucCarry != 0))
+	if ((m_vData.size() == 1) && (m_vData[0] == 0))
 	{
-		uiRes = 0;
-		if (itr1 != bn1.m_vData.end())
-		{
-			uiRes += *itr1;
-			++itr1;
-		}
-		if (itr2 != bn2.m_vData.end())
-		{
-			uiRes += *itr2;
-			++itr2;
-		}
-		uiRes += ucCarry;
-		
-		if (uiRes > 0xff)
-		{
-			ucCarry = (u8)(uiRes >> 8);
-			
-			if (itrRes != bnRes.m_vData.end())
-			{
-				*itrRes = (u8)(uiRes & 0xff);
-			}
-			else
-			{
-				bnRes.m_vData.push_back((u8)(uiRes & 0xff));
-			}
-		}
-		else
-		{
-			ucCarry = (u8)0;
-			
-			if (itrRes != bnRes.m_vData.end())
-			{
-				*itrRes = (u8)uiRes;
-			}
-			else
-			{
-				bnRes.m_vData.push_back((u8)(uiRes));
-			}
-		}
-
-		++itrRes;
+		bRtn = true;
 	}
 
-	if (ucCarry)
-	{
-		bnRes.m_vData.push_back((u8)ucCarry);
-	}
-
-	bRtn = true;
-
-	bnRes.BN_Reorganize();
 	return bRtn;
 }
 
-bool BigNum::BN_Minus_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+bool BigNum::BN_IsLittleEndian() const
+{
+	u32 uiTmp = 0x0001;
+	bool bRtn = false;
+
+	if (*((u8*)&uiTmp) != 0)
+	{
+		bRtn = true;
+	}
+
+	return bRtn;
+}
+
+bool BigNum::BN_Reorganize()
 {
 	bool bRtn = false;
-	std::vector<u8>::iterator itr1, itr2, itrRes;
-	i32 iRes = 0;
-	u8 ucCarry = 0;
-	i8 iComRes = 0;
+	std::vector<u8>::reverse_iterator rit;
+	u32 uiDataSize = 0;
 
-	iComRes = BN_Compare_abs(bn1, bn2);
-	if (iComRes < 0)
+	uiDataSize = m_vData.size();
+	rit = m_vData.rbegin();
+	while ((uiDataSize > 1) && (*rit == 0))
+	{
+		m_vData.pop_back();
+		++rit;
+		--uiDataSize;
+	}
+
+	if ((uiDataSize == 1) && (m_vData[0] == 0))
+	{
+		//Zero
+		m_bPositive = true;
+	}
+	
+	bRtn = true;
+END:
+	return bRtn;
+}
+
+bool BigNum::BN_ReverseBuffer(u8 *const pbData, const u32 uiDataSize) const
+{
+	bool bRtn = false;
+	u32 i = 0;
+
+	if (!pbData || !uiDataSize)
 	{
 		bRtn = false;
 		goto END;
 	}
-	else if (iComRes == 0)
+
+	for (i=0; i<uiDataSize/2; i++)
 	{
-		bnRes = 0;
-		bRtn = true;
-		goto END;
-	}
-	
-	itr1 = bn1.m_vData.begin();
-	itr2 = bn2.m_vData.begin();
-	itrRes = bnRes.m_vData.begin();
-
-	//now, bn1.size >= bn2.size
-	while ((itr2 != bn2.m_vData.end()) || (ucCarry != 0))
-	{
-		iRes = (i32)(*itr1) - ucCarry;
-		ucCarry = 0;
-		
-		if (itr2 != bn2.m_vData.end())
-		{
-			if (iRes < (i32)(*itr2))
-			{
-				ucCarry = 1;
-				iRes += 0x100;
-			}
-			iRes -= (*itr2);
-
-			++itr2;
-		}
-
-		if (itrRes != bnRes.m_vData.end())
-		{
-			*itrRes = (u8)iRes;
-		}
-		else
-		{
-			bnRes.m_vData.push_back((u8)(iRes));
-		}
-
-		++itr1;
-		++itrRes;
+		pbData[i] = pbData[i] ^ pbData[uiDataSize-i-1];
+		pbData[uiDataSize-i-1] = pbData[i] ^ pbData[uiDataSize-i-1];
+		pbData[i] = pbData[i] ^ pbData[uiDataSize-i-1];
 	}
 
 	bRtn = true;
 END:
-	bnRes.BN_Reorganize();
 	return bRtn;
 }
 
-//not implement
-bool BigNum::BN_Multi_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+/*********************PUBLIC*********************/
+//CONSTRUCTOR
+BigNum::BigNum()
+{
+	m_bPositive = true;
+	m_vData.reserve(BIGNUM_DEF_INITSIZE);
+	m_vData.push_back((u8)0);
+}
+
+BigNum::BigNum(const BigNum& bn)
+{
+	m_bPositive = bn.m_bPositive;
+
+	m_vData.reserve(BIGNUM_DEF_INITSIZE);
+	std::copy(bn.m_vData.begin(), bn.m_vData.end(), back_inserter(m_vData));
+	
+	BN_Reorganize();
+}
+
+BigNum::BigNum(const u8* const pbContent, const u32 uiContentSize, const bool bPositive)
+{
+	setData(pbContent, uiContentSize, bPositive);
+}
+
+BigNum::~BigNum()
+{
+	m_vData.erase(m_vData.begin(), m_vData.end());
+}
+
+u32 BigNum::getSize() const
+{
+	u32	uiDataSize = 0;
+
+	uiDataSize = (u32)m_vData.size();
+
+	return uiDataSize;
+}
+
+#ifdef BIGNUM_SUPPORT_PRINT
+bool BigNum::printContent() const
+{
+	bool	bRtn = false;
+	u32	i = 0, uiDataSize = 0;
+	//std::ostream::fmtflags osFlagOld = 0;
+
+	//osFlagOld = std::cout.flag();//save old cout format flag, and set new format flag
+
+	if (m_bPositive)
+	{
+		std::cout << "+";
+	}
+	else
+	{
+		std::cout << "-";
+	}
+
+	uiDataSize = (u32)m_vData.size();
+	for (i=0; i<uiDataSize; i++)
+	{
+		std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << (u32)m_vData.at(uiDataSize-i-1) << " ";
+	}
+	std::cout << std::endl;
+
+	bRtn = true;
+END:
+	//std::cout.flag(osFlagOld);//restore cout format flag
+	return bRtn;
+}
+#endif
+
+u8& BigNum::operator [](u32 idx)
+{
+	u32 uiSize = m_vData.size();
+
+	if (idx < uiSize)
+	{
+		return m_vData.at(uiSize-idx-1);
+	}
+
+	return m_vData.at(uiSize-1);
+}
+
+bool BigNum::setData(const u8* const pbContent, const u32 uiContentSize, const bool bPositive)
 {
 	bool bRtn = false;
+	u32	i = 0;
 
+	if (!pbContent || !uiContentSize)
+	{
+		bRtn = false;
+		goto END;
+	}
+	
+	m_bPositive = bPositive;
+	m_vData.resize(0);
+	m_vData.reserve(BIGNUM_DEF_INITSIZE);
+	
+	for (i=0; i<uiContentSize; i++)
+	{
+		m_vData.push_back(pbContent[uiContentSize-i-1]);
+	}
+
+	bRtn = true;
+	BN_Reorganize();
+END:
 	return bRtn;
 }
 
-//not implement
-bool BigNum::BN_Divide_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
-{
-	bool bRtn = false;
-
-	return bRtn;
-}
-
-
-//not implement
 BigNum& BigNum::operator ++()
 {
 	if (m_bPositive)
@@ -395,13 +332,24 @@ BigNum& BigNum::operator ++()
 	return *this;
 }
 
-//not implement
 BigNum& BigNum::operator --()
 {
-	if (m_bPositive)
+	if (!m_bPositive)
 	{
 		BN_Inc_abs();
 	}
+	else if (BN_IsZero())
+	{
+		//Zero
+		BN_Inc_abs();
+		m_bPositive = false;
+	}
+	else
+	{
+		BN_Dec_abs();
+		BN_Reorganize();
+	}
+
 	return *this;
 }
 
@@ -466,7 +414,7 @@ BigNum& BigNum::operator = (const i32 iData)
 	
 	if (iData < 0)
 	{
-		iIntData *= (-1);
+		iIntData = (-1)*iData;
 		bPositive = false;
 	}
 	else
@@ -529,72 +477,6 @@ BigNum& BigNum::operator %= (const i32 iData)
 BigNum& BigNum::operator ^= (const i32 iData)
 {
 	return *this;
-}
-/**************************COMPARE FUNCTIONS****************************************/
-
-i8 BigNum::BN_Compare_abs(const BigNum& bn1, const BigNum& bn2) const
-{
-	i8 cRes = 0;
-	u32 uiDataSize1 = 0, uiDataSize2 = 0;
-	std::vector<u8>::reverse_iterator rit1, rit2;
-
-	if (&bn1 == &bn2)
-	{
-		cRes = 0;
-		goto END;
-	}
-
-	uiDataSize1 = bn1.m_vData.size();
-	uiDataSize2 = bn2.m_vData.size();
-
-	if (uiDataSize1 > uiDataSize2)
-	{
-		cRes = 1;
-	}
-	else if (uiDataSize1 < uiDataSize2)
-	{
-		cRes = -1;
-	}
-	else
-	{
-		rit1 = bn1.m_vData.rbegin();
-		rit2 = bn2.m_vData.rbegin();
-
-		while (rit1 != bn1.m_vData.rend())
-		{
-			if (*rit1 != *rit2)
-			{
-				cRes = (*rit1 - *rit2);
-				break;
-			}
-			++rit1;
-			++rit2;
-		}
-	}
-
-END:
-	return cRes;
-}
-
-i8 BigNum::BN_Compare_abs(const BigNum& bn, const u32 uiData) const
-{
-	u8 pbData[4] = {0};
-	BigNum tmpBN;
-
-	std::memcpy(pbData, &uiData, 4);
-	if (BN_IsLittleEndian())
-	{
-		BN_ReverseBuffer(pbData, 4);
-	}
-	
-	tmpBN.setData(pbData, sizeof(pbData));
-	
-	return BN_Compare_abs(bn, tmpBN);
-}
-
-i8 BigNum::BN_Compare_abs(const u32 uiData, const BigNum& bn) const
-{
-	return (-1)*BN_Compare_abs(bn, uiData);
 }
 
 bool BigNum::operator > (const BigNum& bn) const
@@ -700,11 +582,160 @@ bool BigNum::operator != (const BigNum& bn) const
 	return !((*this) == (bn));
 }
 
-/**************************FRIEND FUNCTION*******************/
+bool BN_Add_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+{
+	bool bRtn = false;
+	std::vector<u8>::const_iterator itr1, itr2;
+	std::vector<u8>::iterator itrRes;
+	u32	uiRes = 0;
+	u8	ucCarry = 0;
+	
+	itr1 = bn1.m_vData.begin();
+	itr2 = bn2.m_vData.begin();
+	itrRes = bnRes.m_vData.begin();
+
+	while ((itr1 != bn1.m_vData.end()) || (itr2 != bn2.m_vData.end()) || (ucCarry != 0))
+	{
+		uiRes = 0;
+		if (itr1 != bn1.m_vData.end())
+		{
+			uiRes += *itr1;
+			++itr1;
+		}
+		if (itr2 != bn2.m_vData.end())
+		{
+			uiRes += *itr2;
+			++itr2;
+		}
+		uiRes += ucCarry;
+		
+		if (uiRes > 0xff)
+		{
+			ucCarry = (u8)(uiRes >> 8);
+			
+			if (itrRes != bnRes.m_vData.end())
+			{
+				*itrRes = (u8)(uiRes & 0xff);
+			}
+			else
+			{
+				bnRes.m_vData.push_back((u8)(uiRes & 0xff));
+			}
+		}
+		else
+		{
+			ucCarry = (u8)0;
+			
+			if (itrRes != bnRes.m_vData.end())
+			{
+				*itrRes = (u8)uiRes;
+			}
+			else
+			{
+				bnRes.m_vData.push_back((u8)(uiRes));
+			}
+		}
+
+		++itrRes;
+	}
+
+	if (ucCarry)
+	{
+		bnRes.m_vData.push_back((u8)ucCarry);
+	}
+
+	bRtn = true;
+
+	bnRes.BN_Reorganize();
+	return bRtn;
+}
+
+bool BN_Minus_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+{
+	bool bRtn = false;
+	std::vector<u8>::const_iterator itr1, itr2;
+	std::vector<u8>::iterator itrRes;
+	i32 iRes = 0;
+	u8 ucCarry = 0;
+	i8 iComRes = 0;
+
+	iComRes = bn1.BN_Compare_abs(bn1, bn2);
+	if (iComRes < 0)
+	{
+		bRtn = false;
+		goto END;
+	}
+	else if (iComRes == 0)
+	{
+		bnRes = 0;
+		bRtn = true;
+		goto END;
+	}
+	
+	itr1 = bn1.m_vData.begin();
+	itr2 = bn2.m_vData.begin();
+	itrRes = bnRes.m_vData.begin();
+
+	//now, bn1.size >= bn2.size
+	while ((itr2 != bn2.m_vData.end()) || (ucCarry != 0))
+	{
+		iRes = (i32)(*itr1) - ucCarry;
+		ucCarry = 0;
+		
+		if (itr2 != bn2.m_vData.end())
+		{
+			if (iRes < (i32)(*itr2))
+			{
+				ucCarry = 1;
+				iRes += 0x100;
+			}
+			iRes -= (*itr2);
+
+			++itr2;
+		}
+
+		if (itrRes != bnRes.m_vData.end())
+		{
+			*itrRes = (u8)iRes;
+		}
+		else
+		{
+			bnRes.m_vData.push_back((u8)(iRes));
+		}
+
+		++itr1;
+		++itrRes;
+	}
+
+	bRtn = true;
+END:
+	bnRes.BN_Reorganize();
+	return bRtn;
+}
+
+//not implement
+bool BN_Multi_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+{
+	bool bRtn = false;
+
+	return bRtn;
+}
+
+//not implement
+bool BN_Divide_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+{
+	bool bRtn = false;
+
+	return bRtn;
+}
+
 //not implement
 bool BN_Add(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
 {
 	bool bRtn = false;
+
+	BN_Add_abs(bn1, bn2, bnRes);
+
 	return bRtn;
 }
 //not implement

@@ -4,27 +4,47 @@
 
 bool BigNumTest()
 {
-	bool	bRtn = false;
-	u32	i = 0;	
-	u8	pbData[2] = {0xff, 0xf0};
+	bool bRtn = false;
+	u8 pbData[4] = {0xff, 0xff, 0xff, 0xf0};
+	u32 i = 0;
 
-	BigNum	*bn =new BigNum(pbData, sizeof(pbData));
-	BigNum	*bn2 = new BigNum(*bn);
-	
-	bn->printContent();
+	BigNum *bn1 = new BigNum();
+	BigNum *bn2 = new BigNum(pbData, sizeof(pbData));
+	BigNum *bn3 = new BigNum(pbData, sizeof(pbData), false);
+	BigNum *bn4 = new BigNum(*bn3);
+	BigNum bn5, bn6;
+
+	bn1->printContent();
 	bn2->printContent();
+	bn3->printContent();
+	bn4->printContent();
 
-	for (i=0; i<0x10; i++)
-	{
-		++(*bn);
-		bn->printContent();
-	}
+	(*bn1)[0] = 0x01;
+	bn1->printContent();
 	
-	for (i=0; i<0x10; i++)
+	(*bn2)[1] = 0x02;
+	bn2->printContent();
+	
+	(*bn1) = -0x05;
+	bn1->printContent();
+
+	for (i=0; i<10; i++)
 	{
-		--(*bn);
-		bn->printContent();
+		++(*bn1);
+		bn1->printContent();
 	}
+
+	for (i=0; i<10; i++)
+	{
+		--(*bn1);
+		bn1->printContent();
+	}
+
+	bn5 = *bn1;
+	bn5.printContent();
+
+	bn6 = *bn2;
+	bn6.printContent();
 
 	bRtn = true;
 END:
@@ -53,6 +73,6 @@ int main()
 {
 	UtilTest();
 	BigNumTest();
-	
+
 	return 0;
 }
