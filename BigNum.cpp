@@ -1,5 +1,357 @@
 #include "BigNum.h"
 
+/**************FRIEND FUNCTION********************/
+bool BN_IsLittleEndian()
+{
+	u32 uiTmp = 0x0001;
+	bool bRtn = false;
+
+	if (*((u8*)&uiTmp) != 0)
+	{
+		bRtn = true;
+	}
+
+	return bRtn;
+}
+
+bool BN_ReverseBuffer(u8 *const pbData, const u32 uiDataSize)
+{
+	bool bRtn = false;
+	u32 i = 0;
+
+	if (!pbData || !uiDataSize)
+	{
+		bRtn = false;
+		goto END;
+	}
+
+	for (i=0; i<uiDataSize/2; i++)
+	{
+		pbData[i] = pbData[i] ^ pbData[uiDataSize-i-1];
+		pbData[uiDataSize-i-1] = pbData[i] ^ pbData[uiDataSize-i-1];
+		pbData[i] = pbData[i] ^ pbData[uiDataSize-i-1];
+	}
+
+	bRtn = true;
+END:
+	return bRtn;
+}
+
+i8 BN_Compare_abs(const BigNum& bn1, const BigNum& bn2)
+{
+	i8 cRes = 0;
+	u32 uiDataSize1 = 0, uiDataSize2 = 0;
+	std::vector<u8>::const_reverse_iterator rit1, rit2;
+
+	if (&bn1 == &bn2)
+	{
+		cRes = 0;
+		goto END;
+	}
+
+	uiDataSize1 = bn1.m_vData.size();
+	uiDataSize2 = bn2.m_vData.size();
+
+	if (uiDataSize1 > uiDataSize2)
+	{
+		cRes = 1;
+	}
+	else if (uiDataSize1 < uiDataSize2)
+	{
+		cRes = -1;
+	}
+	else
+	{
+		rit1 = bn1.m_vData.rbegin();
+		rit2 = bn2.m_vData.rbegin();
+
+		while (rit1 != bn1.m_vData.rend())
+		{
+			if (*rit1 != *rit2)
+			{
+				if (*rit1 > *rit2)
+				{
+					cRes = 1;
+				}
+				else
+				{
+					cRes = -1;
+				}
+				break;
+			}
+			++rit1;
+			++rit2;
+		}
+	}
+
+END:
+	return cRes;
+}
+
+i8 BN_Compare_abs(const BigNum& bn, const u32 uiData)
+{
+	u8 pbData[4] = {0};
+	BigNum tmpBN;
+
+	std::memcpy(pbData, &uiData, 4);
+	if (BN_IsLittleEndian())
+	{
+		BN_ReverseBuffer(pbData, 4);
+	}
+	
+	tmpBN.setData(pbData, sizeof(pbData));
+	
+	return BN_Compare_abs(bn, tmpBN);
+}
+
+i8 BN_Compare_abs(const u32 uiData, const BigNum& bn)
+{
+	return (-1)*BN_Compare_abs(bn, uiData);
+}
+
+bool BN_Add_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+{
+	bool bRtn = false;
+	std::vector<u8>::const_iterator itr1, itr1end, itr2, itr2end;
+	std::vector<u8>::iterator itrRes;
+	u32	uiRes = 0;
+	u8	ucCarry = 0;
+	
+	itr1 = bn1.m_vData.begin();
+	itr1end = bn1.m_vData.end();
+	itr2 = bn2.m_vData.begin();
+	itr2end = bn2.m_vData.end();
+	itrRes = bnRes.m_vData.begin();
+
+	while ((itr1 != itr1end) || (itr2 != itr2end) || (ucCarry != 0))
+	{
+		uiRes = 0;
+		if (itr1 != itr1end)
+		{
+			uiRes += *itr1;
+			++itr1;
+		}
+		if (itr2 != itr2end)
+		{
+			uiRes += *itr2;
+			++itr2;
+		}
+		uiRes += ucCarry;
+		
+		if (uiRes > 0xff)
+		{
+			ucCarry = (u8)(uiRes >> 8);
+			
+			if (itrRes != bnRes.m_vData.end())
+			{
+				*itrRes = (u8)(uiRes & 0xff);
+			}
+			else
+			{
+				bnRes.m_vData.push_back((u8)(uiRes & 0xff));
+			}
+		}
+		else
+		{
+			ucCarry = (u8)0;
+			
+			if (itrRes != bnRes.m_vData.end())
+			{
+				*itrRes = (u8)uiRes;
+			}
+			else
+			{
+				bnRes.m_vData.push_back((u8)(uiRes));
+			}
+		}
+
+		++itrRes;
+	}
+
+	bRtn = true;
+
+	bnRes.BN_Reorganize();
+	return bRtn;
+}
+
+bool BN_Minus_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+{
+	bool bRtn = false;
+	std::vector<u8>::const_iterator itr1, itr1end, itr2, itr2end;
+	std::vector<u8>::iterator itrRes;
+	i32 iRes = 0;
+	u8 ucCarry = 0;
+	i8 iComRes = 0;
+
+	iComRes = BN_Compare_abs(bn1, bn2);
+	if (iComRes < 0)
+	{
+		bRtn = false;
+		goto END;
+	}
+	else if (iComRes == 0)
+	{
+		bnRes = 0;
+		bRtn = true;
+		goto END;
+	}
+	
+	itr1 = bn1.m_vData.begin();
+	itr1end = bn1.m_vData.end();
+	itr2 = bn2.m_vData.begin();
+	itr2end = bn2.m_vData.end();
+	itrRes = bnRes.m_vData.begin();
+
+	//now, bn1.size >= bn2.size
+	while ((itr1 != itr1end) || (ucCarry != 0))
+	{
+		iRes = (i32)(*itr1) - ucCarry;
+		ucCarry = 0;
+		
+		if (itr2 != itr2end)
+		{
+			if (iRes < (i32)(*itr2))
+			{
+				ucCarry = 1;
+				iRes += 0x100;
+			}
+			iRes -= (*itr2);
+
+			++itr2;
+		}
+
+		if (itrRes != bnRes.m_vData.end())
+		{
+			*itrRes = (u8)iRes;
+		}
+		else
+		{
+			bnRes.m_vData.push_back((u8)(iRes));
+		}
+
+		++itr1;
+		++itrRes;
+	}
+
+	bRtn = true;
+END:
+	bnRes.BN_Reorganize();
+	return bRtn;
+}
+
+//not implement
+bool BN_Multi_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+{
+	bool bRtn = false;
+
+	return bRtn;
+}
+
+//not implement
+bool BN_Divide_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+{
+	bool bRtn = false;
+
+	return bRtn;
+}
+
+bool BN_Add(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+{
+	bool bRtn = false;
+	i8 iComRes = 0;
+
+	if (bn1.m_bPositive == bn2.m_bPositive)
+	{
+		BN_Add_abs(bn1, bn2, bnRes);
+		bnRes.m_bPositive = bn1.m_bPositive;
+	}
+	else
+	{
+		iComRes = BN_Compare_abs(bn1, bn2);
+		if (iComRes > 0)
+		{
+			//bn1>bn2
+			BN_Minus_abs(bn1, bn2, bnRes);
+			bnRes.m_bPositive = bn1.m_bPositive;
+		}
+		else if (iComRes < 0)
+		{
+			//bn1<bn2
+			BN_Minus_abs(bn2, bn1, bnRes);
+			bnRes.m_bPositive = bn2.m_bPositive;
+		}
+		else
+		{
+			bnRes = 0;
+			bnRes.m_bPositive = true;
+		}
+	}
+	bRtn = true;
+END:
+	return bRtn;
+}
+
+bool BN_Minus (const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+{
+	bool bRtn = false;
+	i8 iComRes = 0;
+
+	if (bn1.m_bPositive != bn2.m_bPositive)
+	{
+		BN_Add_abs(bn1, bn2, bnRes);
+		bnRes.m_bPositive = bn1.m_bPositive;
+	}
+	else
+	{
+		iComRes = BN_Compare_abs(bn1, bn2);
+		if (iComRes > 0)
+		{
+			//bn1>bn2
+			BN_Minus_abs(bn1, bn2, bnRes);
+			bnRes.m_bPositive = bn1.m_bPositive;
+		}
+		else if (iComRes < 0)
+		{
+			//bn1<bn2
+			BN_Minus_abs(bn2, bn1, bnRes);
+			bnRes.m_bPositive = !(bn1.m_bPositive);
+		}
+		else
+		{
+			bnRes = 0;
+			bnRes.m_bPositive = true;
+		}
+	}
+	bRtn = true;
+END:
+	return bRtn;
+}
+
+//not implement
+bool BN_Multi(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+{
+	bool bRtn = false;
+	return bRtn;
+}
+//not implement
+bool BN_Divide(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+{
+	bool bRtn = false;
+	return bRtn;
+}
+//not implement
+bool BN_Mode(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+{
+	bool bRtn = false;
+	return bRtn;
+}
+//not implement
+bool BN_Exp(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
+{
+	bool bRtn = false;
+	return bRtn;
+}
+
 /*************PRIVATE***************/
 bool BigNum::BN_Inc_abs()
 {
@@ -69,90 +421,11 @@ END:
 	return bRtn;
 }
 
-
-i8 BigNum::BN_Compare_abs(const BigNum& bn1, const BigNum& bn2) const
-{
-	i8 cRes = 0;
-	u32 uiDataSize1 = 0, uiDataSize2 = 0;
-	std::vector<u8>::const_reverse_iterator rit1, rit2;
-
-	if (&bn1 == &bn2)
-	{
-		cRes = 0;
-		goto END;
-	}
-
-	uiDataSize1 = bn1.m_vData.size();
-	uiDataSize2 = bn2.m_vData.size();
-
-	if (uiDataSize1 > uiDataSize2)
-	{
-		cRes = 1;
-	}
-	else if (uiDataSize1 < uiDataSize2)
-	{
-		cRes = -1;
-	}
-	else
-	{
-		rit1 = bn1.m_vData.rbegin();
-		rit2 = bn2.m_vData.rbegin();
-
-		while (rit1 != bn1.m_vData.rend())
-		{
-			if (*rit1 != *rit2)
-			{
-				cRes = (*rit1 - *rit2);
-				break;
-			}
-			++rit1;
-			++rit2;
-		}
-	}
-
-END:
-	return cRes;
-}
-
-i8 BigNum::BN_Compare_abs(const BigNum& bn, const u32 uiData) const
-{
-	u8 pbData[4] = {0};
-	BigNum tmpBN;
-
-	std::memcpy(pbData, &uiData, 4);
-	if (BN_IsLittleEndian())
-	{
-		BN_ReverseBuffer(pbData, 4);
-	}
-	
-	tmpBN.setData(pbData, sizeof(pbData));
-	
-	return BN_Compare_abs(bn, tmpBN);
-}
-
-i8 BigNum::BN_Compare_abs(const u32 uiData, const BigNum& bn) const
-{
-	return (-1)*BN_Compare_abs(bn, uiData);
-}
-
 bool BigNum::BN_IsZero() const
 {
 	bool bRtn = false;
 	
 	if ((m_vData.size() == 1) && (m_vData[0] == 0))
-	{
-		bRtn = true;
-	}
-
-	return bRtn;
-}
-
-bool BigNum::BN_IsLittleEndian() const
-{
-	u32 uiTmp = 0x0001;
-	bool bRtn = false;
-
-	if (*((u8*)&uiTmp) != 0)
 	{
 		bRtn = true;
 	}
@@ -181,29 +454,6 @@ bool BigNum::BN_Reorganize()
 		m_bPositive = true;
 	}
 	
-	bRtn = true;
-END:
-	return bRtn;
-}
-
-bool BigNum::BN_ReverseBuffer(u8 *const pbData, const u32 uiDataSize) const
-{
-	bool bRtn = false;
-	u32 i = 0;
-
-	if (!pbData || !uiDataSize)
-	{
-		bRtn = false;
-		goto END;
-	}
-
-	for (i=0; i<uiDataSize/2; i++)
-	{
-		pbData[i] = pbData[i] ^ pbData[uiDataSize-i-1];
-		pbData[uiDataSize-i-1] = pbData[i] ^ pbData[uiDataSize-i-1];
-		pbData[i] = pbData[i] ^ pbData[uiDataSize-i-1];
-	}
-
 	bRtn = true;
 END:
 	return bRtn;
@@ -369,15 +619,15 @@ END:
 	return *this;
 }
 
-//not implement
 BigNum& BigNum::operator += (const BigNum& bn)
 {
+	BN_Add(*this, bn, *this);
 	return *this;
 }
 
-//not implement
 BigNum& BigNum::operator -= (const BigNum& bn)
 {
+	BN_Minus(*this, bn, *this);
 	return *this;
 }
 
@@ -443,15 +693,23 @@ END:
 	return *this;
 }
 
-//not implement
 BigNum& BigNum::operator += (const i32 iData)
 {
+	BigNum tmpBN;
+
+	tmpBN = iData;
+	BN_Add(*this, tmpBN, *this);
+
 	return *this;
 }
 
-//not implement
 BigNum& BigNum::operator -= (const i32 iData)
 {
+	BigNum tmpBN;
+
+	tmpBN = iData;
+	BN_Minus(*this, tmpBN, *this);
+
 	return *this;
 }
 
@@ -580,191 +838,4 @@ bool BigNum::operator == (const BigNum& bn) const
 bool BigNum::operator != (const BigNum& bn) const
 {
 	return !((*this) == (bn));
-}
-
-bool BN_Add_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
-{
-	bool bRtn = false;
-	std::vector<u8>::const_iterator itr1, itr2;
-	std::vector<u8>::iterator itrRes;
-	u32	uiRes = 0;
-	u8	ucCarry = 0;
-	
-	itr1 = bn1.m_vData.begin();
-	itr2 = bn2.m_vData.begin();
-	itrRes = bnRes.m_vData.begin();
-
-	while ((itr1 != bn1.m_vData.end()) || (itr2 != bn2.m_vData.end()) || (ucCarry != 0))
-	{
-		uiRes = 0;
-		if (itr1 != bn1.m_vData.end())
-		{
-			uiRes += *itr1;
-			++itr1;
-		}
-		if (itr2 != bn2.m_vData.end())
-		{
-			uiRes += *itr2;
-			++itr2;
-		}
-		uiRes += ucCarry;
-		
-		if (uiRes > 0xff)
-		{
-			ucCarry = (u8)(uiRes >> 8);
-			
-			if (itrRes != bnRes.m_vData.end())
-			{
-				*itrRes = (u8)(uiRes & 0xff);
-			}
-			else
-			{
-				bnRes.m_vData.push_back((u8)(uiRes & 0xff));
-			}
-		}
-		else
-		{
-			ucCarry = (u8)0;
-			
-			if (itrRes != bnRes.m_vData.end())
-			{
-				*itrRes = (u8)uiRes;
-			}
-			else
-			{
-				bnRes.m_vData.push_back((u8)(uiRes));
-			}
-		}
-
-		++itrRes;
-	}
-
-	if (ucCarry)
-	{
-		bnRes.m_vData.push_back((u8)ucCarry);
-	}
-
-	bRtn = true;
-
-	bnRes.BN_Reorganize();
-	return bRtn;
-}
-
-bool BN_Minus_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
-{
-	bool bRtn = false;
-	std::vector<u8>::const_iterator itr1, itr2;
-	std::vector<u8>::iterator itrRes;
-	i32 iRes = 0;
-	u8 ucCarry = 0;
-	i8 iComRes = 0;
-
-	iComRes = bn1.BN_Compare_abs(bn1, bn2);
-	if (iComRes < 0)
-	{
-		bRtn = false;
-		goto END;
-	}
-	else if (iComRes == 0)
-	{
-		bnRes = 0;
-		bRtn = true;
-		goto END;
-	}
-	
-	itr1 = bn1.m_vData.begin();
-	itr2 = bn2.m_vData.begin();
-	itrRes = bnRes.m_vData.begin();
-
-	//now, bn1.size >= bn2.size
-	while ((itr2 != bn2.m_vData.end()) || (ucCarry != 0))
-	{
-		iRes = (i32)(*itr1) - ucCarry;
-		ucCarry = 0;
-		
-		if (itr2 != bn2.m_vData.end())
-		{
-			if (iRes < (i32)(*itr2))
-			{
-				ucCarry = 1;
-				iRes += 0x100;
-			}
-			iRes -= (*itr2);
-
-			++itr2;
-		}
-
-		if (itrRes != bnRes.m_vData.end())
-		{
-			*itrRes = (u8)iRes;
-		}
-		else
-		{
-			bnRes.m_vData.push_back((u8)(iRes));
-		}
-
-		++itr1;
-		++itrRes;
-	}
-
-	bRtn = true;
-END:
-	bnRes.BN_Reorganize();
-	return bRtn;
-}
-
-//not implement
-bool BN_Multi_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
-{
-	bool bRtn = false;
-
-	return bRtn;
-}
-
-//not implement
-bool BN_Divide_abs(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
-{
-	bool bRtn = false;
-
-	return bRtn;
-}
-
-//not implement
-bool BN_Add(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
-{
-	bool bRtn = false;
-
-	BN_Add_abs(bn1, bn2, bnRes);
-
-	return bRtn;
-}
-//not implement
-bool BN_Minus (const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
-{
-	bool bRtn = false;
-	return bRtn;
-}
-//not implement
-bool BN_Multi(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
-{
-	bool bRtn = false;
-	return bRtn;
-}
-//not implement
-bool BN_Divide(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
-{
-	bool bRtn = false;
-	return bRtn;
-}
-//not implement
-bool BN_Mode(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
-{
-	bool bRtn = false;
-	return bRtn;
-}
-//not implement
-bool BN_Exp(const BigNum& bn1, const BigNum& bn2, BigNum& bnRes)
-{
-	bool bRtn = false;
-	return bRtn;
 }
